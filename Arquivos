@@ -1,1 +1,37 @@
-Estudos de arquivos em C.
+#include <stdio.h>
+
+int main(int argc, char** argv)
+{
+	FILE *entrada;
+	int c;
+
+	if(argc != 2)
+	{
+		fprintf(stderr,"Erro na chamada do comando.\n");
+		fprintf(stderr,"Uso: %s [ARQUIVO ORIGEM] [ARQUIVO DESTINO].\n", argv[0]);
+		return 1;
+	}
+
+	entrada = fopen(argv[1],"rb");
+	if(!entrada)
+	{
+		fprintf(stderr,"Arquivo %s não pode ser aberto para leitura\n", argv[1]);
+		return 1;
+	}
+    
+    int soma = 0;
+ 	c = fgetc(entrada);
+	while(c != EOF)
+	{
+	    if(c == "\n"){
+	        soma ++;
+	    }
+		c = fgetc(entrada);
+	}
+
+    printf(soma);
+
+
+	fclose(entrada);
+	return 0;
+}
