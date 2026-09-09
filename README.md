@@ -5,3 +5,4 @@ Cada pasta contém exercícios, anotações e pequenos projetos feitos.
 
 ## Estrutura
 - *estrutura-de-dados/* → implementação de listas, filas, pilhas etc. 
+- *ex-arquivo-conta-linhas/* → exercício na linguagem C de arquivos.
