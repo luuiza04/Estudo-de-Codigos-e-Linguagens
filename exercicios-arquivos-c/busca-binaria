@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <string.h>
+
+typedef struct _Endereco Endereco; //1 estrutura 1 registro
+
+struct _Endereco{
+    char logradouro[72];
+    char bairro[72];
+    char cidade[72];
+    char uf[72];
+    char sigla[2];
+    char cep[8];
+    char lixo[2]; // Ao Espaço no final da linha + quebra de linha
+};
+
+int main(int argc, char**argv){ 
+
+    FILE *f;
+    Endereco e;
+    int c; //conta quantas leituras necessarias
+    
+    if(argc != 2){ //valida se foi digitado o cep
+        fprintf(stderr, "USO: %s [CEP]", argv[0]);
+        return 1;
+    }
+    
+    c = 0;
+    printf("Tamanho da Estrutura: %ld\n\n", sizeof(Endereco));
+    f = fopen("cep_ordenado.dat", "rb");
+    
+    fseek(f, 0, SEEK_END); //ponteiro de leitura para o ultimo byte
+    long tamanhoBytes = ftell(f); //tamanhop do arquivo em byte
+    long tamanhoRegistros = tamanhoBytes/sizeof(Endereco); //quantidade de structs
+    long inicio = 0;
+    long fim = tamanhoRegistros - 1;
+    
+    while(inicio <= fim){ //intervalo é valido?
+        long meio = (inicio + fim) / 2;
+        fseek(f, meio * sizeof(Endereco), SEEK_SET); //move a leitura no inicio SEEKSET. Se o meio for a posicao 500 e cada registro tem 300 bytes, ele pula para o byte 150.000
+        fread(&e, sizeof(Endereco), 1, f); //le 1 registro da posicao meio e coloca em e
+        c++;
+        
+        if(strncmp(argv[1], e.cep, 8) == 0){ // cep encontrado
+        printf("%.72s\n%.72s\n%.72s\n%.72s\n%.2s\n%.8s\n", e.logradouro, e.bairro, e.cidade, e.uf, e.sigla, e.cep);
+        break;
+        }
+        else if(strncmp(argv[1], e.cep, 8) < 0){ // cep e menor
+            fim = meio - 1; //fim vira meio -1. analisamos a outra metade (esquerda)
+        }
+        else{ // cep e maior
+            inicio = meio + 1; //inicio vira meio +1. analisamos a outra metade (direita)
+        }
+    }
+    
+    printf("Total Lido: %d\n", c); //impreime total de leituras feitas
+    fclose(f);
+
+}
