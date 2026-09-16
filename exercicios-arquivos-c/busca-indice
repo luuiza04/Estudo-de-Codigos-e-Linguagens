@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <string.h>
+
+typedef struct _Indice Indice;
+
+struct _Indice{ //essa struct ocupa 16bytes, muito mais rapida de carregar
+    char cep[8];
+    long posicao;
+};
+typedef struct _Endereco Endereco;
+
+struct _Endereco
+{
+	char logradouro[72];
+	char bairro[72];
+	char cidade[72];
+	char uf[72];
+	char sigla[2];
+	char cep[8];
+	char lixo[2];
+};
+
+int main(int argc, char**argv){
+
+    if (argc != 2) {
+        fprintf(stderr, "USO: %s [CEP]\n", argv[0]);
+        return 1;
+    }
+
+    FILE *f = fopen("indice.dat", "rb");
+
+    Indice ind;
+    fseek(f, 0, SEEK_END); //vai pro final do arquivo
+    long tamanhoBytes = ftell(f); //tamanhop do arquivo em byte
+    long tamanhoRegistros = tamanhoBytes/sizeof(Indice); // quantidade de registros no indice
+    long inicio = 0;
+    long fim = tamanhoRegistros - 1;
+
+    long posicao_encontrada = -1; // guarda a posicao do registro original. -1 significa que ainda nao achou
+    
+    while(inicio <= fim){ //intervalo é valido?
+        long meio = (inicio + fim) / 2;
+
+        fseek(f, meio * sizeof(Indice), SEEK_SET); // pula direto para o registro do meio no arquivo indice.dat
+        fread(&ind, sizeof(Indice), 1, f); //le 1 registro de indice do meio
+        
+        if(strncmp(argv[1], ind.cep, 8) == 0){ // cep encontrado
+        posicao_encontrada = ind.posicao; // salvo qual e a posicao que esse CEP esta
+        break;
+        }
+        else if(strncmp(argv[1], ind.cep, 8) < 0){ // cep e menor
+            fim = meio - 1; //fim vira meio -1. analisamos a outra metade (esquerda)
+        }
+        else{ // cep e maior
+            inicio = meio + 1; //inicio vira meio +1. analisamos a outra metade (direita)
+        }
+    }
+    fclose(f); // fecho o arquivo de indice
+
+    if(posicao_encontrada != -1){ // se achei a posicao no indice
+        FILE *f_cep = fopen("cep.dat", "rb"); // abro o cep.dat original desordenado
+        
+        Endereco e; 
+        
+        fseek(f_cep, posicao_encontrada*sizeof(Endereco), SEEK_SET); // pulo direto para o byte exato onde esta o endereco completo usando a posicao salva
+        fread(&e, sizeof(Endereco), 1, f_cep); // leio os 300 bytes do endereco
+
+        printf("%.72s\n%.72s\n%.72s\n%.72s\n%.2s\n%.8s\n", e.logradouro, e.bairro, e.cidade, e.uf, e.sigla, e.cep); // imprimo os dados
+        fclose(f_cep);
+    } else{
+        printf("CEP nao encontrado");
+    }
+    return 0;
+}
