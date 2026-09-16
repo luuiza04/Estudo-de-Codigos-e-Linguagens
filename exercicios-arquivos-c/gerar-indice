@@ -1,0 +1,63 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+typedef struct _Indice Indice;
+
+struct _Indice{ //essa struct ocupa 16bytes, muito mais rapida de carregar
+    char cep[8];
+    long posicao;
+};
+
+typedef struct _Endereco Endereco;
+
+struct _Endereco
+{
+	char logradouro[72];
+	char bairro[72];
+	char cidade[72];
+	char uf[72];
+	char sigla[2];
+	char cep[8];
+	char lixo[2];
+};
+
+// função de comparação exigida pelo qsort
+// que recebe dois ponteiros genéricos void* para itens do vetor
+int compara_indices(const void *e1, const void *e2){ 
+    // converte os ponteiros genéricos para Indice* em tempo de execução,
+    // acessa os campos cep usando a seta e comparamos os 8 caracteres com strncmp
+    return strncmp(((Indice*)e1)->cep, ((Indice*)e2)->cep, 8);
+}
+
+int main(int argc, char**argv){ 
+
+    FILE *f;
+    
+    f = fopen("cep.dat", "rb"); //abre para leitura binaria
+
+    fseek(f, 0, SEEK_END); //vai pro final do arquivo
+    long posicao = ftell(f);// pega o tamanho em bytes
+    long qtd = posicao / sizeof(Endereco);//quantidade de enderecos no total
+
+    Endereco *e = (Endereco*) malloc(qtd * sizeof(Endereco)); //e é um vetor na memoria ram para receber os enderecos completos
+
+    Indice *ind = (Indice*) malloc(qtd * sizeof(Indice)); //ind é um vetor na memoria ram para guardar os indices vazio nessa linha
+
+    rewind(f); //volta pro inicio do arquivo
+    fread(e, sizeof(Endereco), qtd, f);//le todos os registros para o vetor e
+    
+    for(long i = 0; i < qtd; i++){ //enquanto i for menor que a quantidade de enderecos totais
+        strncpy(ind[i].cep, e[i].cep, 8); //copia o cep de endereco e poe em cep de indice
+        ind[i].posicao = i; // salva a posicao de indice
+    }
+
+    qsort(ind, qtd, sizeof(Indice), compara_indices);
+
+    FILE *saida = fopen("indice.dat", "wb"); //abri o arquivo de saida para escrita binaria
+    fwrite(ind, sizeof(Indice), qtd, saida);
+    fclose(saida);
+    fclose(f);
+    free(e); //libera o vetor de enderecos
+    free(ind); //libera o vetor de indices
+}
